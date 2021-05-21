@@ -1,13 +1,44 @@
 %! TEX root = **/010-main.tex
 % vim: spell spelllang=es:
 
+% Antes de empezar el examen, leed atentamente los siguientes comentarios:
+%
+% - Esto es un examen y los exámenes se hacen de forma individual.
+%
+% - La fecha límite para entregar el examen (y el proyecto) es el lunes 21 de
+%   junio de 2021 a las 8:00.
+%
+% - He montado una “práctica” en el racó para hacer la entrega del examen.
+%
+% - El examen que entreguéis ha de ser un PDF.
+%
+% - Hemos calculado que el tiempo necesario para realizar el examen son unas
+%   20-30 horas de trabajo. No lo dejéis para el final.
+%
+% - Teniendo en cuenta que tenéis mucho tiempo para hacer el examen, una buena
+% redacción y ortografía se tendrá en cuenta en la evaluación.
+%
+% - No os limitéis a la información que hay en las transparencias del curso, hay
+%   que buscar en otras fuentes.
+%
+% - Además del examen tenéis que entregar un anexo, en el que, para cada
+%   pregunta, indiquéis las referencias, páginas web, etc. que habéis consultado
+%   durante el examen.
+%
+% - El examen consta de:
+%   - 6 preguntas estándar (2 hojas por pregunta, aprox.  1000 palabras por pregunta).
+%   - 1 pregunta doble, es cómo un pequeño trabajo (4 hojas, aprox. 2000 palabras)
+
+\newcommand{\sep}{\hrule}
+
 \newcommand{\pregunta}[1]{
+    \pagebreak
     \begin{enumerate}[resume]
         \item #1
     \end{enumerate}
 }
 
-\pregunta{Describe el pipeline gráfico tradicional}
+\pregunta{Describe el pipeline gráfico tradicional}\sep{}
 
 \pregunta{Dada la siguiente rutina escrita en C:}
 
@@ -33,26 +64,23 @@ correspondiente. Tened en cuenta que como máximo podéis utilizar 1024 threads
 por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
 1237, M = 2311, suponed que N, M > 1024).
 
+\vspace{1em} \sep{}
+
 \pregunta{Disponemos de una tarjeta gráfica con 2 GPUs. En esta tarjeta queremos
     correr un juego interactivo 3D (que utiliza OpenGL u otra API similar). Si
     estuvierais diseñando el driver de la API gráfica, ¿cómo distribuirías el
     trabajo entre las 2 GPUs para maximizar el rendimiento?  ¿Qué información
     hay que enviar a cada tarjeta? ¿Han de sincronizarse/comunicarse las 2 GPUs?
     ¿Cómo pueden hacerlo? Os ayudará tener en mente cómo funciona el pipeline
-gráfico}
+gráfico} \sep{}
 
 \pregunta{Una de las herramientas que utilizamos en CUDA son los eventos (event en
-CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.}
+CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.} \sep{}
 
 \pregunta{Si queremos utilizar GPUs para cálculo de propósito general (GPGPU)
     puedes escoger entre CUDA, OpenCL y OpenACC. Describe las ventajas e
     inconvenientes de cada alternativa.  Además, se pueden combinar. ¿Qué
-posibilidades ofrece combinar OpenACC con CUDA o OpenCL?}
+posibilidades ofrece combinar OpenACC con CUDA o OpenCL?} \sep{}
 
 \pregunta{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
-implicaciones tienen en el diseño de la GPU?}
-
-\pagebreak
-
-
-\pagebreak
+implicaciones tienen en el diseño de la GPU?} \sep{}
