@@ -1,5 +1,5 @@
 %! TEX root = **/010-main.tex
-% vim: spell spelllang=en:
+% vim: spell spelllang=es:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PREAMBLE
@@ -10,11 +10,14 @@
 % EXTRA PACKAGES / CONFIG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\usepackage{enumitem}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % METADATA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{My title \\ \Large \normalfont My Subtitle}
-\author{First Author \\ Second Author}
+\title{Tarjetas gráficas y aceleradores\\ \Large \normalfont
+Examen final}
+\author{Aleix Bon\'e}
 \date{\today}
 
 \begin{document}
@@ -24,22 +27,22 @@
 
     % Default title or use titlepage.tex
 
-    %\maketitle
+    % \maketitle
     \include{020-titlepage}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TOC & lists
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    \pagenumbering{Roman}
+    % \pagenumbering{Roman}
 
     %\setcounter{tocdepth}{2}
-    \tableofcontents \pagebreak
+    % \tableofcontents \pagebreak
 
-    \listoffigures \pagebreak
-    \listoftables \clearpage
+    % \listoffigures \pagebreak
+    % \listoftables \clearpage
 
-    \pagenumbering{arabic}
+    % \pagenumbering{arabic}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SECTIONS
@@ -49,13 +52,15 @@
     \setlength{\parskip}{1em plus 0.5em minus 0.2em}
     %\setlength{\parindent}{0pt}
 
-    \include{030-mysection}
+    \include{030-preguntas}
+    \include{040-doble}
+    \include{050-cuestionario}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    \printbibliography[heading=bibintoc]
+    % \printbibliography[heading=bibintoc]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % APPENDIX
@@ -64,8 +69,8 @@
     % uncomment to add appendix section prefix to numbering
     %\appendixpagenumbering
 
-    \appendix
+    % \appendix
 
-    \include{990-appendix}
+    % \include{990-appendix}
 
 \end{document}

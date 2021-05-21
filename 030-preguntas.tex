@@ -1,0 +1,58 @@
+%! TEX root = **/010-main.tex
+% vim: spell spelllang=es:
+
+\newcommand{\pregunta}[1]{
+    \begin{enumerate}[resume]
+        \item #1
+    \end{enumerate}
+}
+
+\pregunta{Describe el pipeline gráfico tradicional}
+
+\pregunta{Dada la siguiente rutina escrita en C:}
+
+\begin{minted}{c}
+void Examen21(float mA[N][M], float mB[N][M], float vC[N], float vD[M]) {
+  int i, j;
+  for (i=0; i<N; i++)
+    for (j=0; j<M; j++)
+         mA[i][j] = mA[i][j]*vC[i] - mB[i][j]*vD[j] + mA[i][0]*mB[7][j];
+}
+\end{minted}
+
+Escribid 3 versiones del kernel CUDA que resuelva el mismo problema:
+
+\begin{enumerate}[label=(\alph*)]
+    \item En la primera versión cada thread se va a ocupar de 1 columna de la matriz resultado.
+    \item En la segunda versión cada thread se va a ocupar de 1 fila de la matriz resultado.
+    \item En la última versión cada thread se va a ocupar de 1 elemento de la matriz resultado.
+\end{enumerate}
+
+Escribid los kernels CUDA para cada versión, así como la invocación
+correspondiente. Tened en cuenta que como máximo podéis utilizar 1024 threads
+por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
+1237, M = 2311, suponed que N, M > 1024).
+
+\pregunta{Disponemos de una tarjeta gráfica con 2 GPUs. En esta tarjeta queremos
+    correr un juego interactivo 3D (que utiliza OpenGL u otra API similar). Si
+    estuvierais diseñando el driver de la API gráfica, ¿cómo distribuirías el
+    trabajo entre las 2 GPUs para maximizar el rendimiento?  ¿Qué información
+    hay que enviar a cada tarjeta? ¿Han de sincronizarse/comunicarse las 2 GPUs?
+    ¿Cómo pueden hacerlo? Os ayudará tener en mente cómo funciona el pipeline
+gráfico}
+
+\pregunta{Una de las herramientas que utilizamos en CUDA son los eventos (event en
+CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.}
+
+\pregunta{Si queremos utilizar GPUs para cálculo de propósito general (GPGPU)
+    puedes escoger entre CUDA, OpenCL y OpenACC. Describe las ventajas e
+    inconvenientes de cada alternativa.  Además, se pueden combinar. ¿Qué
+posibilidades ofrece combinar OpenACC con CUDA o OpenCL?}
+
+\pregunta{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
+implicaciones tienen en el diseño de la GPU?}
+
+\pagebreak
+
+
+\pagebreak
