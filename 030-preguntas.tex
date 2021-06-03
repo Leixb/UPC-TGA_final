@@ -29,29 +29,34 @@
 %   - 6 preguntas estándar (2 hojas por pregunta, aprox.  1000 palabras por pregunta).
 %   - 1 pregunta doble, es cómo un pequeño trabajo (4 hojas, aprox. 2000 palabras)
 
-\newcommand{\sep}{\hrule}
+\begin{pregunta}{Describe el pipeline gráfico tradicional}\sep{}
 
-\newcommand{\pregunta}[1]{
-    \pagebreak
-    \begin{enumerate}[resume]
-        \item #1
-    \end{enumerate}
-}
+El pipeline gráfico tradicional consiste en 4 etapas principales:
 
-\pregunta{Describe el pipeline gráfico tradicional}\sep{}
+\begin{enumerate}
+    \item Aplicación
+    \item Procesado de Geometrías
+    \item Rasterización
+    \item Procesado de pixels
+\end{enumerate}
 
-\pregunta{Dada la siguiente rutina escrita en C:}
+\cite{lawrence_3d_2012}
+\cite{rmit_-_cs_lecture_2017}
+\cite{moller_real-time_2018}
 
-\begin{minted}{c}
-void Examen21(float mA[N][M], float mB[N][M], float vC[N], float vD[M]) {
-  int i, j;
-  for (i=0; i<N; i++)
-    for (j=0; j<M; j++)
-         mA[i][j] = mA[i][j]*vC[i] - mB[i][j]*vD[j] + mA[i][0]*mB[7][j];
-}
-\end{minted}
+\end{pregunta}
 
-Escribid 3 versiones del kernel CUDA que resuelva el mismo problema:
+\begin{pregunta}{Dada la siguiente rutina escrita en C:}
+    \begin{minted}{c}
+    void Examen21(float mA[N][M], float mB[N][M], float vC[N], float vD[M]) {
+      int i, j;
+      for (i=0; i<N; i++)
+        for (j=0; j<M; j++)
+             mA[i][j] = mA[i][j]*vC[i] - mB[i][j]*vD[j] + mA[i][0]*mB[7][j];
+    }
+    \end{minted}
+
+    Escribid 3 versiones del kernel CUDA que resuelva el mismo problema:
 
 \begin{enumerate}[label=(\alph*)]
     \item En la primera versión cada thread se va a ocupar de 1 columna de la matriz resultado.
@@ -66,7 +71,9 @@ por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
 
 \vspace{1em} \sep{}
 
-\pregunta{Disponemos de una tarjeta gráfica con 2 GPUs. En esta tarjeta queremos
+\end{pregunta}
+
+\begin{pregunta}{Disponemos de una tarjeta gráfica con 2 GPUs. En esta tarjeta queremos
     correr un juego interactivo 3D (que utiliza OpenGL u otra API similar). Si
     estuvierais diseñando el driver de la API gráfica, ¿cómo distribuirías el
     trabajo entre las 2 GPUs para maximizar el rendimiento?  ¿Qué información
@@ -74,13 +81,17 @@ por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
     ¿Cómo pueden hacerlo? Os ayudará tener en mente cómo funciona el pipeline
 gráfico} \sep{}
 
-\pregunta{Una de las herramientas que utilizamos en CUDA son los eventos (event en
+\end{pregunta}
+\begin{pregunta}{Una de las herramientas que utilizamos en CUDA son los eventos (event en
 CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.} \sep{}
 
-\pregunta{Si queremos utilizar GPUs para cálculo de propósito general (GPGPU)
+\end{pregunta}
+\begin{pregunta}{Si queremos utilizar GPUs para cálculo de propósito general (GPGPU)
     puedes escoger entre CUDA, OpenCL y OpenACC. Describe las ventajas e
     inconvenientes de cada alternativa.  Además, se pueden combinar. ¿Qué
 posibilidades ofrece combinar OpenACC con CUDA o OpenCL?} \sep{}
 
-\pregunta{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
+\end{pregunta}
+\begin{pregunta}{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
 implicaciones tienen en el diseño de la GPU?} \sep{}
+\end{pregunta}

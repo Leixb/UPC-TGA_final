@@ -12,6 +12,23 @@
 
 \usepackage{enumitem}
 
+\newcommand{\sep}{\hrule}
+
+\newenvironment{pregunta}[1]
+{
+    \pagebreak
+    \begin{refsection}
+    \begin{enumerate}
+        \setcounter{enumi}{\therefsection}
+        \addtocounter{enumi}{-1}
+        \item #1
+    \end{enumerate}
+    \phantomsection
+    \addcontentsline{toc}{section}{Pregunta \therefsection}
+} {
+    \end{refsection}
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % METADATA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,25 +69,43 @@ Examen final}
     \setlength{\parskip}{1em plus 0.5em minus 0.2em}
     %\setlength{\parindent}{0pt}
 
+\nocite{fernandez_tarjetas_2021}
+
     \include{030-preguntas}
     \include{040-doble}
     \include{050-cuestionario}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% BIBLIO
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    % \printbibliography[heading=bibintoc]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % APPENDIX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % uncomment to add appendix section prefix to numbering
-    \appendixpagenumbering
+    % \appendixpagenumbering
 
     \appendix
 
-    \include{990-appendix}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BIBLIO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    \addcontentsline{toc}{section}{Referencias}
+
+    \defbibheading{bibgeneral}{%
+        \section*{Referencias generales}}
+    \defbibheading{subbibliography}{%
+        \section*{Referencias para pregunta \therefsection}}
+
+    \printbibliography[heading=bibgeneral]
+
+    \makeatletter
+    \newcounter{int}
+    \@whilenum\value{int}<8\do
+    {\stepcounter{int}
+        \printbibliography[section=\theint,heading=subbibliography]
+    }
+    \makeatother
+
+
+    % \include{990-appendix}
 
 \end{document}
