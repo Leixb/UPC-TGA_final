@@ -5,19 +5,87 @@
 primeras (a-e) requieren una explicación más elaborada.}
 
 \begin{enumerate}[label=(\alph*)]
-    \item ¿Cual es la diferencia entre un fragmento y un píxel?
+    \item ¿Cual es la diferencia entre un fragmento y un pixel?
+
+        Un pixel es un elemento final de la imagen, un fragmento es una parte de
+        una primitiva que se corresponde a un pixel. La principal diferencia es
+        que un fragmento puede tener mas información asociada que un pixel y que
+        un fragmento esta asociado a un pixel pero un pixel puede generar-se a
+        partir de la combinación de varios fragmentos, este seria el caso cuando
+        se combinan 1 o más fragmentos transparentes para formar un pixel
+        (\emph{alpha blending}) o si se aplica algún tipo de
+        \emph{anti-aliasing}.
+
     \item ¿Qué hace el rasterizador?
+
+        Genera los fragmentos (grupos de pixels que forman parte de un mismo
+        triangulo) a partir de la información de las ecuaciones de
+        triángulos de las primitivas. Estos fragmentos rasterizados se
+        corresponden a pixels de la imagen final y serán procesados por el
+        \emph{fragment shader}.
+
     \item Siempre decimos que en una GPU ocultamos la latencia con memoria. ¿Puedes explicar cómo lo hacemos?
+
+        Mediante paralelismo y cambios de contexto de ejecución. Mientras una
+        parte de la memoria se esta copiando (latencia) se cambia el contexto de
+        ejecución para realizar otras tareas. De modo similar se pueden a
+        empezar a ejecutar \emph{kernels} a medida que se transfieren los datos
+        de memoria necesarios. No hace falta esperar a terminar todas las copias
+        para empezar la ejecución. \cite{volkov_understanding_nodate}.
+
     \item ¿Qué significa que una GPU tenga los shaders unificados?
+
+        Que las unidades de procesamiento de la GPU pueden ejecutar
+        \emph{shaders} de cualquier tipo. Esto permite poder aprovechar al
+        máximo las unidades de procesado de la GPU ya que si necesitamos muchos
+        más \emph{vertex shaders} que \emph{fragment shaders} no estamos
+        limitados.
+
     \item ¿Para qué sirve el Z buffer? ¿Cómo lo hace?
+
+        El \emph{Z buffer} determina la posición de los fragmentos en el eje
+        \emph{Z} (perpendicular al plano cámara) y se usa para determinar que
+        elementos quedan delante de otros. Para ello se calcula la distancia de
+        cada fragmento respecto a los valores \emph{zNear} y \emph{zFar}
+        (limites de renderizado en profundidad) y se guarda el valor de la
+        \emph{Z} más cercana el el \emph{Z buffer} (tamaño igual a la imagen
+        final). Si se encuentra un nuevo pixel mas lejano se descarta, si esta
+        mas cerca se actualiza.
+
+        \pagebreak
 %%
     \item Define en una frase CLIPPING
+
+        Operación realizada durante el procesado de primitivas del pipeline
+        gráfico en la que se descartan primitivas que quedan fuera del campo de
+        visión eliminando completamente los vértices del triangulo o partiéndolo
+        en triángulos mas pequeños.
+
     \item Define en una frase CULLING
+
+        Operación realizada durante el procesado de primitivas del pipeline
+        gráfico en la que se descartan primitivas que quedan ocluidos por otras
+        primitivas usando el \emph{z-buffer}, al igual que con el \emph{CLIPPING}
+        se puede descartar la primitiva entera o partir-la en nuevas primitivas
+        si la oclusión es parcial.
+
     \item ¿Qué es REYES?
+
+        \emph{Renders Everything You Ever Saw} es un algoritmo de renderizado de
+        gráficos foto-realista que no sigue el método tradicional actual y usa
+        muchos micro-polígonos. Esta enfocado a la creación de contenido
+        multimedia (desarrollado por la actual \emph{Pixar}).
+        \cite{shua_rispec_2011}
+
     \item ¿Qué es el Aspect Ratio?
+
+        Es la relación entre el ancho y el alto de una imagen.
+
     \item Muchas veces hablamos de GPGPU, ¿que quieren decir estas siglas?
 
-    \emph{General-Purpose Graphics Processing Unit}
+        \emph{General Purpose Graphics Procesing Unit}: una tarjeta gráfica que
+        se puede programar para realizar tareas de propósito general (no solo
+        procesado de gráficos).
 
 \end{enumerate}
 

@@ -31,18 +31,91 @@
 
 \begin{pregunta}{Describe el pipeline gráfico tradicional}\sep{}
 
-El pipeline gráfico tradicional consiste en 4 etapas principales:
+El pipeline gráfico tradicional tiene como objetivo la generación de gráficos
+explotando al máximo el paralelismo que ofrecen las GPUs. Para ello el pipeline
+organiza las distintas tareas a realizar de forma coherente aprovechando al
+máximo las capacidades de las GPUs y ocultando la latencia de memoria.
+
+El pipeline se puede dividir en 4 etapas principales. Aunque hay un orden en
+estas etapas, algunas operaciones se pueden realizar simultáneamente y así
+aprovechar el paralelismo que ofrece la GPU.
 
 \begin{enumerate}
-    \item Aplicación
-    \item Procesado de Geometrías
-    \item Rasterización
-    \item Procesado de pixels
+    \item Vértices
+    \item Primitivas
+    \item Fragmentos
+    \item Pixels
 \end{enumerate}
 
+\paragraph{Vértices} En el procesado de vértices se proyectan los vértices sobre
+el plano de visión según la configuración de proyección y la camera. También se
+pueden aplicar cálculos de iluminación y color o otras transformaciones
+sobre los vértices del modelo o la cámara. En el pipeline tradicional estas
+operaciones se realizan en el \emph{vertex shader} donde se programa como se
+hacen los cálculos. Estas operaciones se realizan en paralelo para diversos
+grupos de pixels.
+
+\paragraph{Primitivas} Partiendo de los vértices procesados en la etapa anterior
+se generan primitivas agrupándolos en triángulos. Se eliminan primitivas
+innecesarias (que no se verán en la imagen final). Para ello se aplica un
+proceso de \emph{CLIPPING} y \emph{CULLING}. El \emph{CLIPPING} consiste en
+eliminar las primitivas que queden fuera del campo de visión (o parte de ellas,
+dividiéndolas en triángulos). \emph{CULLING} usa el \emph{z-buffer} para
+determinar que primitivas quedan ocultas detrás de otras y eliminar-las de modo
+similar al \emph{CLIPPING}. En algunos casos la etapa de \emph{CULLING} no se
+puede aplicar debido a la transparencia de los objetos. Eliminar primitivas
+permite evitar computaciones innecesarias en las siguientes etapas.
+
+Antes de pasar a la siguiente fase, se calculan las ecuaciones que forman los
+triángulos (\emph{triangle setup}) que serán usadas en las otras etapas. Este
+calculo es muy costoso y poco eficiente si tenemos triángulos muy pequeños.
+
+\paragraph{Fragmentos} En esta etapa se generan y procesan los fragmentos
+(grupos de pixels de la imagen que pertenecen a un mismo triangulo). La
+generación de los fragmentos se denomina \emph{rasterización} y consiste en
+calcular para cada triangulo que pixels de la imagen final forman parte de el.
+Una vez \emph{rasterizados} los fragmentos se procesan en el \emph{fragment
+shader} que permite aplicar transformaciones a los fragmentos (como antialiasing) y
+calcular su color (u otros atributos). Al igual que el \emph{vertex shader}, se
+puede programar. En el \emph{fragment shader} se puede aplicar texturas
+almacenadas en la memoria de texturas de la tarjeta.
+
+\paragraph{Pixels} En la etapa final se aplican operaciones sobre los fragmentos
+antes de trasladar-los al \emph{frame-buffer}. Hay dos tipos de operaciones
+posibles, las de aceptación/rechazo en las que se decide si el pixel se copiara
+al \emph{frame buffer} o no y las de \emph{combinación} que combinan los colores
+de varios pixels. Las operaciones de aceptación/rechazo se realizan mediante
+\emph{tests}. Tenemos los siguientes:
+
+\begin{enumerate}
+    \item \textbf{Scissor test} Recorta el área de renderizado. Solo hace falta
+        almacenar los parámetros que definen el área rectangular de renderizado.
+    \item \textbf{Alpha test} Descarta pixels con valor \emph{alpha}
+        (transparencia) de 0 o muy cercanos a 0.
+    \item \textbf{Stencil test} Usado para dibujar sombras: se proyectan sobre
+        el \emph{stencil buffer} y al renderizar se hacen dos pasadas dibujando
+        los elementos fuera del \emph{stencil} con iluminación y los marcados en
+        el sin iluminación. También se puede usar para recortar el área de
+        renderizado con formas no rectangulares.
+    \item \textbf{Z test} Descarta fragmentos que quedan ocluidos por otros.
+        Es una operación muy costosa y hay varias optimizaciones que se han ido
+        aplicando a lo largo de los años.
+    \item \textbf{Alpha Blending} Determina como combinar el color del
+        \emph{frame buffer} con el del nuevo pixel según su transparencia (\emph{alpha})
+        mediante un proceso de interpolación.
+\end{enumerate}
+
+Actualmente las etapas del pipeline gráfico tradicional se siguen aplicando en
+las GPUs pero han habido muchos cambios en su funcionamiento y arquitectura.
+Quizás el más notable son los \emph{shaders} unificados, que permiten que
+los \emph{vertex} y \emph{fragment shaders} usen los mismos elementos de
+cálculo.
+
+\paragraph{Referencias:}
 \cite{lawrence_3d_2012}
 \cite{rmit_-_cs_lecture_2017}
 \cite{moller_real-time_2018}
+\cite{giesen_trip_2011}
 
 \end{pregunta}
 
@@ -70,6 +143,40 @@ por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
 1237, M = 2311, suponed que N, M > 1024).
 
 \vspace{1em} \sep{}
+
+Si analizamos las dependencias del código, vemos que \texttt{mA[i][j]} depende
+del valor \texttt{mA[i][0]}, por lo que se tiene que calcular siempre la columna
+0 antes que el resto. En el caso de 1 thread por fila no hay problema, pero los
+otros deben sincronizarse adecuadamente.
+
+Otro apunte importante es que trabajar con matrices en CUDA es complejo y puede
+generar problemas (alocución no contigua en memoria de hileras), por lo que en
+mi versión se usaran matrices aplanadas.
+
+\subsection*{(a) Columna}
+
+\begin{listing}[H]
+    \caption{kernel columna}
+    \inputminted[firstline=18,lastline=28]{cuda}{code/main.cu}
+    \label{lst:kernel-fila}
+\end{listing}
+
+\subsection*{(b) Fila}
+
+\begin{listing}[H]
+    \caption{kernel fila}
+    \inputminted[firstline=30,lastline=38]{cuda}{code/main.cu}
+    \label{lst:kernel-fila}
+\end{listing}
+
+\subsection*{(c) Elemento}
+
+\begin{listing}[H]
+    \caption{kernel elemento}
+    \inputminted[firstline=45,lastline=54]{cuda}{code/main.cu}
+    \label{lst:kernel-elemento}
+\end{listing}
+
 
 \end{pregunta}
 
