@@ -5,4 +5,40 @@
     implementa en las nuevas tarjetas de Nvidia, las RTX. Os ayudará que esta
 pregunta la encaréis cómo si fuera un pequeño trabajo.} \sep{}
 
+\subsection*{¿Qué es el raytracing?}
+
+El raytracing es una técnica de renderizaci\'on de gráficos basado en el trazado
+del camino que hacen los rayos de luz en la escena. A diferencia del sistema de
+rasterización estándar, el raytracing es un modelo de luz global, es decir tiene
+en consideración todas las fuentes de luz de la escena no solo la fuente
+principal. Como consiguiente es capaz de simular efectos ópticos como
+reflexión, refracción, dispersión y sombras entre otros.
+
+La capacidad de la técnica de raytracing para calcular efectos ópticos de manera
+realista hace que se obtengan imágenes mucho más foto-realistas que mediante el
+rasterizado convencional (que para simular estos efectos ópticos tiene que
+recurrir a técnicas alternativas como texturas, \emph{stencils} \dots). Sin
+embargo el coste computacional del raytracing es mucho mayor y hasta hace poco
+no se podía aplicar en tiempo real y su uso estaba limitado al ámbito
+cinematográfico.
+
+
+\subsection*{Funcionamiento}
+
+Hay diversos algoritmos de \emph{raytracing} que varían en algunos puntos (Des
+de donde empezar los rayos, control de profundidad \dots) Pero todos se basan en
+el mismo concepto: trazar rayos de luz desde (o hasta) la cámara.
+% BVH
+
+\cite{leopold_english_2017}
+
+\subsection*{Nvidia RTX}
+
+En 2018, \emph{Nvidia} presentó su nueva arquitectura de tarjetas gráficas llamada \emph{Turing}.
+Estas nuevas tarjetas, a con el nombre \emph{RTX}, tenían la novedad de incluir
+los nuevos \emph{RT cores} (\emph{RayTracing cores}). Estas unidades de
+procesamiento están especializadas en los procesos de cálculo necesarios para
+raytracing. Con estas nuevas tarjetas es posible generar gráficos con raytracing
+en tiempo real. \cite{noauthor_introducing_2018}
+
 \end{pregunta}

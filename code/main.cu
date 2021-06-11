@@ -11,10 +11,11 @@ void Examen21(float *mA, float *mB, float *vC, float *vD) {
     int i, j;
     for (i=0; i<N; i++)
         for (j=0; j<M; j++)
-            mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j]; //+ mA[i*M]*mB[7*M + j];
+            mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j] + mA[i*M]*mB[7*M + j];
+            /* mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j]; //+ mA[i*M]*mB[7*M + j]; */
 }
 
-__global__ void kernel_fila(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
+__global__ void kernel_columna(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (j >= M) return;
@@ -26,16 +27,19 @@ __global__ void kernel_fila(float mA[N*M], float mB[N*M], float vC[N], float vD[
         /* mA[M*i + j] += mA[M*i]*mB[M*7 + j]; */
 }
 
-__global__ void kernel_columna(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
+__global__ void kernel_fila(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i >= N) return;
 
-    for (int j=0; j<N; j++)
-        mA[M*i + j] = mA[M*i + j]*vC[i] - mB[M*i + j]*vD[j];
+    for (int j=0; j<M; j++)
+        mA[M*i + j] = mA[M*i + j]*vC[i] - mB[M*i + j]*vD[j] + mA[M*i]*mB[M*7];
 
-    /* for (int j=0; j<N; i++) */
-        /* mA[M*i + j] += mA[M*i]*mB[M*7 + j]; */
+}
+
+__global__ void kernel_col0(float mA[N*M], float mB[N*M]) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    mA[M*i] += mA[M*i]*mB[M*7];
 }
 
 __global__ void kernel_elemento(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
@@ -105,8 +109,12 @@ int main(int argc, char **argv) {
     else dimBlock.x = 1024;
 
     dim3 dimGrid(1, 1, 1);
-    dimGrid.x = (N + dimBlock.x - 1)/dimBlock.x;
-    dimGrid.y = (M + dimBlock.y - 1)/dimBlock.y;
+    if (modo == ELEMENTO) {
+        dimGrid.x = (N + dimBlock.x - 1)/dimBlock.x;
+        dimGrid.y = (M + dimBlock.y - 1)/dimBlock.y;
+    } else {
+        dimGrid.x = (N*M + dimBlock.x - 1)/dimBlock.x;
+    }
 
     switch (modo) {
         case FILA:
@@ -138,7 +146,7 @@ int main(int argc, char **argv) {
 
     if (verify(mA, mA_cuda)) {
         fprintf(stderr, "OK\n");
-        return 0;
+        /* return 0; */
     } else {
         fprintf(stderr, "FAIL\n");
     }
