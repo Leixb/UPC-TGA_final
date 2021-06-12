@@ -120,11 +120,13 @@ programables en el pipeline sin necesidad de cambiar la arquitectura de la tarje
 Además los \emph{shaders} tienen más capacidades permitiendo acceso a memoria
 convencional instrucciones de control de flujo y más registros.
 
-\paragraph{Referencias:}
-\cite{lawrence_3d_2012}
-\cite{rmit_-_cs_lecture_2017}
-\cite{moller_real-time_2018}
-\cite{giesen_trip_2011}
+% \paragraph{Referencias:}
+\nocite{
+rmit_-_cs_lecture_2017,
+giesen_trip_2011,
+lawrence_3d_2012,
+moller_real-time_2018,
+}
 
 \end{pregunta}
 
@@ -154,8 +156,8 @@ por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
 \vspace{1em} \sep{}
 \vspace{3em}
 
-Si analizamos las dependencias del código, vemos que \texttt{mA[i][j]} depende
-del valor \texttt{mA[i][0]}, por lo que se tiene que calcular siempre la columna
+Si analizamos las dependencias del código, vemos que \mintinline{cuda}{mA[i][j]} depende
+del valor \mintinline{cuda}{mA[i][0]}, por lo que se tiene que calcular siempre la columna
 0 antes que el resto. En el caso de 1 thread por fila no hay problema, pero los
 otros deben sincronizarse adecuadamente.
 
@@ -169,10 +171,12 @@ El código completo se encuentra en el~\cref{asec:codigo}.
 \subsection*{(a) Columna}
 
 Para el \emph{kernel} de columna tenemos que asegurar-nos de que la primera columna
-se ha calculado antes de proceder al resto. Para ello usamos un \emph{lock} que
-se tiene que inicializar a 0 antes de la llamada al \emph{kernel} y al que solo el
-primer thread del primer bloque escribe. Usamos un \texttt{while} para esperar a que
-el valor del \emph{lock} este en 1 sincronizando los threads.
+se ha calculado antes de proceder al resto. Para ello usamos una variable \emph{lock}
+para sincronizar las columnas. Hasta que no este en 1, no se podrá proceder. Se
+tiene que inicializar a 0 antes de la llamada al \emph{kernel} y solo el
+primer thread del primer bloque escribirá y la pondrá a 1 cuando acabe. Usamos
+un \mintinline{cuda}{while} para esperar a que el valor del \emph{lock} este en
+1 sincronizando los threads.
 
 Otra alternativa sería ejecutar la primera columna en serie antes del \emph{kernel} y que el
 thread de la primera columna no hiciera nada.
@@ -208,7 +212,8 @@ calculado antes. Pero a diferencia del caso de las columnas, podemos calcular to
 elementos de la primera columna en paralelo. Para ello usaremos un \emph{lock} de
 \emph{N} posiciones en el que el primer bloque del primer thread escribirá en la posición
 de la fila en la que se ha calculado. Al igual que en el caso de las columnas usamos un
-\texttt{while} con el \emph{lock} para esperar a que se completen estos elementos.
+\mintinline{cuda}{while} con el \emph{lock} correspondiente para esperar a que
+se complete el elemento de la fila del thread actual antes de continuar.
 
 \begin{listing}[H]
     \caption{Kernel elemento y su invocación}
@@ -337,36 +342,36 @@ El funcionamiento de los eventos es muy simple y esta altamente relacionado con
 el funcionamiento de los \emph{streams}:
 
 \begin{itemize}
-    \item Creamos el evento con: \texttt{cudaEventCreate(event)}
+    \item Creamos el evento con: \mintinline{cuda}{cudaEventCreate(event)}
 
         En este punto solo hemos creado el evento y hemos almacenado su
-        referencia en la variable \texttt{event}.
+        referencia en la variable \mintinline{cuda}{event}.
 
-    \item Registramos el evento con: \texttt{cudaEventRecord(event, stream)}
+    \item Registramos el evento con: \mintinline{cuda}{cudaEventRecord(event, stream)}
 
         Con esta funcion registramos el evento en el \emph{stream} especificado
-        por la variable \texttt{stream}. Cuando este \emph{stream} acabe de
+        por la variable \mintinline{cuda}{stream}. Cuando este \emph{stream} acabe de
         ejecutar lo que tenia por delante en la cola almacenara el tiempo en el
         que ha llegado al evento en nuestra variable evento (a nivel de
         \emph{GPU}).
 
-    \item Sincronizamos el evento con: \texttt{cudaEventSynchronize(event)}
+    \item Sincronizamos el evento con: \mintinline{cuda}{cudaEventSynchronize(event)}
 
         Antes de poder consultar el valor del evento tenemos que sincronizar con
         la \emph{GPU} para asegurar que se ha llegado ya a dar un valor a este.
 
-    \item Calculamos el tiempo entre eventos con: \texttt{cudaEventElapsedTime(\&t, start, end)}
+    \item Calculamos el tiempo entre eventos con: \mintinline{cuda}{cudaEventElapsedTime(&t, start, end)}
 
         Esta función calcula el tiempo entre dos eventos y los almacena en la
-        variable \texttt{t} (de tipo \texttt{float}).
+        variable \mintinline{cuda}{t} (de tipo \mintinline{cuda}{float}).
 
     \item También podemos consultar si se ha llegado al evento con:
-        \texttt{cudaEventQuery(event)}
+        \mintinline{cuda}{cudaEventQuery(event)}
 
-    \item Eliminamos el evento con: \texttt{cudaEventDestroy(event)}
+    \item Eliminamos el evento con: \mintinline{cuda}{cudaEventDestroy(event)}
 
-    \item Para la sincronización entre \emph{streams} podemos usar:
-        \texttt{cudaStreamWaitEvent(stream, event, flags)}
+    \item Para la sincronización entre \emph{streams}:
+        \mintinline{cuda}{cudaStreamWaitEvent(stream, event, flags)}
 
         Esta función registra en el \emph{stream} especificado un punto del que
         no se puede pasar hasta que no termine el evento.
@@ -402,14 +407,14 @@ medir el tiempo de ejecución (en milisegundos). En este caso solo hace falta si
 En el~\cref{lst:kernel-event-streams} podemos ver un ejemplo del uso de eventos
 para la sincronización entre dos \emph{streams} distintos. En este caso el
 kernel $A$ se ejecuta en el \emph{stream} 1 y los kernels $B$ y $C$ en el
-\emph{stream} 2. El evento \texttt{lock} se registra en el \emph{stream} 1
+\emph{stream} 2. El evento \mintinline{cuda}{lock} se registra en el \emph{stream} 1
 cuando el kernel $A$ ha terminado. En el \emph{stream} 2, se espera a que este
 evento se acabe antes de continuar y ejecutar el kernel $C$.
 
 De este modo los kernels $A$ y $B$ se pueden ejecutar concurrentemente y $C$
 solo se puede ejecutar cuando $A$ acabe (y $B$ también ya que están en el mismo
 \emph{stream}). Se podría conseguir el mismo resultado usando una llamada a
-\texttt{cudaDeviceSynchronize()} antes de llamar al kernel $C$.
+\mintinline{cuda}{cudaDeviceSynchronize()} antes de llamar al kernel $C$.
 
 \begin{listing}[H]
     \caption{Sincronización de \emph{streams} con \emph{events}}
@@ -517,8 +522,83 @@ pero las partes mas costosas se implementan directamente en \emph{C}.
 \begin{pregunta}{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
 implicaciones tienen en el diseño de la GPU?} \sep{}
 
-Hay diversos filtros: lineal, bi-lineal, tri-lineal anisotropico
+Hay diversos filtros: point sample, lineal, bi-lineal, tri-lineal,
+anisotropico y PCF.  \cite{heckbert_survey_1986}
 
-\cite{heckbert_survey_1986}
+\paragraph{Point sample:} es el filtro más simple. Consiste en seleccionar el valor del
+\emph{texel} de la textura que mas se acerca a las coordenadas del pixel. Si el tamaño
+del pixel es similar al tamaño del \emph{texel} el resultado es ``aceptable''
+pero en la mayoría de casos produce artefactos en la imagen.
+
+\paragraph{Lineal:} se aplica una interpolación lineal entre los dos texels más
+cercanos. Presenta problemas de \emph{aliasing}.
+
+\paragraph{(MipMapping):} no es un filtro en si pero es una técnica que se usa
+en el resto de filtros. Consiste en guardar las texturas en varias resoluciones
+en potencias de dos: ($4\times4$, $8\times8$, \dots, $256\times256$, \dots,
+$2^N\times2^N$). El
+aumento en uso de la memoria es mínimo ya que el incremento del uso de espacio
+respecto al de la textura original es:
+$1 + \frac{1}{4} + \frac{1}{16} +\dots + \frac{1}{4^N} \approx 1 + \frac{1}{3}$
+
+\paragraph{Bi-lineal:} se hace un promedio de los 4 valores más cercanos.
+También se usa \emph{MipMapping} para escoger la textura cuyos texels se
+parezcan mas al tamaño del pixel. Presenta problemas de aliasing en la zona de
+magnificación.
+
+\paragraph{Tri-lineal:} usa los dos \emph{MipMaps} que mas se acerquen al tamaño
+del pixel y hace promedio de los 4 mas cercanos en los dos \emph{MipMaps}.
+
+\paragraph{Anisotrópico}: usa varios filtro \emph{tri-lineales} o
+\emph{bi-lineales} cogiendo muestras de la textura en varios puntos formando una
+forma no cuadrada. Esto permite reducir la distorsión en casos en el que la
+superficie se encuentra en un angulo extremo.
+
+\paragraph{PCF:} \emph{Percentage Closer filtering} es un tipo de filtro que se
+aplica en las texturas de mapas de sombras. Este filtro consiste en calcular
+varios puntos cercanos al pixel y hace un promedio de los valores generando así
+zonas en las que las sombras pueden ser parciales. A través de
+este filtro se consigue poder difuminar los bordes de las sombras y que sean mas
+foto-realistas. Variando el radio en el que se cogen los puntos se puede
+augmentar el difuminado de las sombras (dependiendo del tipo de iluminación de
+la escena se requerirán sombras más definidas o menos).
+
+\pagebreak
+\subsection*{Implicaciones en el diseño de la GPU}
+
+Los filtros de texturas implican que en el proceso de computación del color de
+los fragmentos se debe:
+
+\begin{itemize}
+    \item Acceder a la memoria de texturas.
+    \item Traducir la posición del pixel a la posición(es) en la memoria de
+        texturas.
+    \item Coger muestras de varios puntos en la memoria de las texturas.
+    \item Poder aplicar operaciones matemáticas básicas para interpolar el color
+        final.
+\end{itemize}
+
+Estas operaciones son muy costosas debido a los varios accesos d memoria y los
+cálculos a realizar, que se deben calcular para cada pixel. Para ello las
+tarjetas gráficas tienen una conjunto de unidades de texturas que se encarga
+solamente de este proceso.
+
+Para el caso de los filtros tri-lineales se tiene que poder acceder a dos
+\emph{mipmaps} en un mismo ciclo. Esto es una tarea complicada, se debe
+garantizar que los \emph{mipmaps} se puedan acceder sin conflicto y que los 4
+texels contiguos estén también en bancos distintos. Así pues, el punto más
+importante en el diseño de una \emph{GPU} al que afectan las texturas es el
+diseño de la cache de texturas.
+
+En la cache de texturas se usan técnicas
+especiales en el modo de almacenar las texturas: \emph{6D blocking}
+y ordenación por curvas de \emph{Morton}. El \emph{6D blocking} reduce la
+localidad espacial de las texturas almacenadas reordenando los indices de acceso
+de los texels (moviendo el orden de las coordenadas de las distintas
+dimensiones) de modo que la direcciones de memoria donde se guardan estén en
+bloques distintos. La ordenación de \emph{Morton} garantiza que cualquier grupo
+de 4 texels contiguos a un pixel estará almacenado en un banco distinto de la
+cache y podrá por consiguiente ser accedidos simultáneamente. Todos estos
+procesos en las tarjetas actuales son transparentes al programador.
 
 \end{pregunta}
