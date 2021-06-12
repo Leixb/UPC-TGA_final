@@ -1,7 +1,7 @@
 #include<stdio.h>
 
-#define N 100
-#define M 100
+#define N 1237
+#define M 2311
 
 enum modo{FILA, COLUMNA, ELEMENTO};
 
@@ -12,63 +12,65 @@ void Examen21(float *mA, float *mB, float *vC, float *vD) {
     for (i=0; i<N; i++)
         for (j=0; j<M; j++)
             mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j] + mA[i*M]*mB[7*M + j];
-            /* mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j]; //+ mA[i*M]*mB[7*M + j]; */
 }
 
-__global__ void kernel_columna(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
+__global__ void kernel_columna(float mA[N*M], float mB[N*M], float vC[N], float vD[M], int *lock) {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
-
     if (j >= M) return;
 
-    for (int i=0; i<N; i++)
-        mA[M*i + j] = mA[M*i + j]*vC[i] - mB[M*i + j]*vD[j];
+    if (j == 0) {
+        for (int i=0; i<N; i++)
+            mA[i*M] = mA[i*M]*vC[i] - mB[i*M]*vD[0] + mA[i*M]*mB[7*M];
 
-    /* for (int i=0; i<N; i++) */
-        /* mA[M*i + j] += mA[M*i]*mB[M*7 + j]; */
+        *lock = 1;
+        return;
+    }
+
+    while(!*lock) __syncthreads();
+
+    for (int i=0; i<N; i++)
+        mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j] + mA[i*M]*mB[7*M + j];
 }
 
 __global__ void kernel_fila(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-
     if (i >= N) return;
 
     for (int j=0; j<M; j++)
-        mA[M*i + j] = mA[M*i + j]*vC[i] - mB[M*i + j]*vD[j] + mA[M*i]*mB[M*7];
-
+        mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j] + mA[i*M]*mB[7*M + j];
 }
 
-__global__ void kernel_col0(float mA[N*M], float mB[N*M]) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    mA[M*i] += mA[M*i]*mB[M*7];
-}
-
-__global__ void kernel_elemento(float mA[N*M], float mB[N*M], float vC[N], float vD[M]) {
+__global__ void kernel_elemento(float mA[N*M], float mB[N*M], float vC[N], float vD[M], int *lock) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-
     if (i >= N || j >= M) return;
 
-    mA[M*i + j] = mA[M*i + j]*vC[i] - mB[M*i + j]*vD[j];
+    if (j == 0) {
+        mA[i*M] = mA[i*M]*vC[i] - mB[i*M]*vD[0] + mA[i*M]*mB[7*M];
+        lock[i] = 1;
+        return;
+    }
 
-    /* mA[M*i + j] += mA[M*i]*mB[M*7 + j]; */
+    while(!lock[i]) __syncthreads();
+
+    mA[i*M + j] = mA[i*M + j]*vC[i] - mB[i*M + j]*vD[j] + mA[i*M]*mB[7*M + j];
 }
 
-int verify(float *mA_ref, float *mA) {
+int verify(float *mA_ref, float *mA, float tol) {
     for (int i=0; i<N*M; i++)
-        if (mA_ref[i] != mA[i]) return 0;
+        if (fabs(mA_ref[i] - mA[i]) > tol) return 0;
     return 1;
 }
 
 int main(int argc, char **argv) {
-    CheckCudaError((char *) "Start", __LINE__);
     enum modo modo = FILA;
 
     if (argc > 1) {
-        if ((strcmp("row", argv[1])) == 0) modo = FILA;
+        if ((strcmp("fila", argv[1])) == 0) modo = FILA;
         else if ((strcmp("col", argv[1])) == 0) modo = COLUMNA;
         else if ((strcmp("ele", argv[1])) == 0) modo = ELEMENTO;
         else {
-            fprintf(stderr, "Invalid argument\n");
+            fprintf(stderr, "Parámetro inválido\n");
             return 1;
         }
     }
@@ -80,15 +82,15 @@ int main(int argc, char **argv) {
     vC = (float*)malloc(sizeof(float)*N);
     vD = (float*)malloc(sizeof(float)*M);
 
-    // Fill matrices
+    // Rellenamos las matrices con valores de prueba
     for (int i=0; i<N; i++) {
         for (int j=0; j<M; j++) {
-            mA[i*M + j] = 1.0;
-            mB[i*M + j] = 5.0;
+            mA[i*M + j] = 1.0 + (i*3)%7;
+            mB[i*M + j] = 2.0 + j%11;
         }
-        vC[i] = 2.5;
+        vC[i] = i*0.3;
     }
-    for (int j=0; j<M; j++) vD[j] = 0.75;
+    for (int j=0; j<M; j++) vD[j] = j*0.75;
 
     float *mA_dev, *mB_dev, *vC_dev, *vD_dev;
 
@@ -102,29 +104,37 @@ int main(int argc, char **argv) {
     cudaMemcpy(mB_dev, mB, sizeof(float)*N*M, cudaMemcpyHostToDevice);
     cudaMemcpy(vC_dev, vC, sizeof(float)*N,   cudaMemcpyHostToDevice);
     cudaMemcpy(vD_dev, vD, sizeof(float)*M,   cudaMemcpyHostToDevice);
-    CheckCudaError((char *) "Memcpy", __LINE__);
+    CheckCudaError((char *) "Memcpy H -> D", __LINE__);
 
-    dim3 dimBlock(1, 1, 1);
-    if (modo == ELEMENTO) dimBlock.x = dimBlock.y = 32;
-    else dimBlock.x = 1024;
-
-    dim3 dimGrid(1, 1, 1);
-    if (modo == ELEMENTO) {
-        dimGrid.x = (N + dimBlock.x - 1)/dimBlock.x;
-        dimGrid.y = (M + dimBlock.y - 1)/dimBlock.y;
-    } else {
-        dimGrid.x = (N*M + dimBlock.x - 1)/dimBlock.x;
-    }
+    int *lock;
+    dim3 dimGrid, dimBlock;
 
     switch (modo) {
         case FILA:
+            dimBlock = dim3(1024, 1, 1);
+            dimGrid = dim3((N*M + dimBlock.x - 1)/dimBlock.x, 1, 1);
+
             kernel_fila<<<dimGrid, dimBlock>>>(mA_dev, mB_dev, vC_dev, vD_dev);
             break;
         case COLUMNA:
-            kernel_columna<<<dimGrid, dimBlock>>>(mA_dev, mB_dev, vC_dev, vD_dev);
+            cudaMalloc((int**)&lock, sizeof(int));
+            cudaMemset(lock, 0, sizeof(int));
+            CheckCudaError((char *) "Crear lock", __LINE__);
+
+            dimBlock = dim3(1024, 1, 1);
+            dimGrid = dim3((N*M + dimBlock.x - 1)/dimBlock.x, 1, 1);
+
+            kernel_columna<<<dimGrid, dimBlock>>>(mA_dev, mB_dev, vC_dev, vD_dev, lock);
             break;
         case ELEMENTO:
-            kernel_elemento<<<dimGrid, dimBlock>>>(mA_dev, mB_dev, vC_dev, vD_dev);
+            cudaMalloc((int**)&lock, N*sizeof(int));
+            cudaMemset(lock, 0, N*sizeof(int));
+            CheckCudaError((char *) "Crear lock", __LINE__);
+
+            dimBlock = dim3(32, 32, 1);
+            dimGrid = dim3((N + dimBlock.x - 1)/dimBlock.x, (M + dimBlock.y - 1)/dimBlock.y , 1);
+
+            kernel_elemento<<<dimGrid, dimBlock>>>(mA_dev, mB_dev, vC_dev, vD_dev, lock);
             break;
         default:
             fprintf(stderr, "ERROR\n");
@@ -134,6 +144,7 @@ int main(int argc, char **argv) {
     float *mA_cuda = (float*)malloc(sizeof(float)*N*M);
 
     cudaMemcpy(mA_cuda, mA_dev, sizeof(float)*N*M, cudaMemcpyDeviceToHost);
+    CheckCudaError((char *) "Memcpy D -> H", __LINE__);
 
     cudaFree(mA_dev);
     cudaFree(mB_dev);
@@ -144,20 +155,13 @@ int main(int argc, char **argv) {
 
     Examen21(mA, mB, vC, vD);
 
-    if (verify(mA, mA_cuda)) {
-        fprintf(stderr, "OK\n");
-        /* return 0; */
-    } else {
+    // Comprobación con tolerancia alta debido a errores de float
+    if (!verify(mA, mA_cuda, 1e-2)) {
         fprintf(stderr, "FAIL\n");
+        return 1;
     }
 
-    for (int i=0; i<N; i++) {
-        for (int j=0; j<M; j++) {
-            printf("%g %g ; ", mA[i*M + j], mA_cuda[i*M + j]);
-        }
-        printf("\n");
-    }
-
+    fprintf(stderr, "OK\n");
 }
 
 void CheckCudaError(char sms[], int line) {
