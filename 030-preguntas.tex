@@ -356,16 +356,81 @@ de partes de un \emph{stream}.
     inconvenientes de cada alternativa.  Además, se pueden combinar. ¿Qué
 posibilidades ofrece combinar OpenACC con CUDA o OpenCL?} \sep{}
 
-\paragraph{CUDA} es la solución de \emph{GPGPU} ofrecida por \emph{Nvidia}. Es la más
-popular actualmente debido a la facilidad de programar usando \emph{CUDA}. Debido a esto
-hay muchas aplicaciones de calculo científico que usan \emph{CUDA} exclusivamente y es más fácil
-encontrar información y recursos sobre su funcionalidad. El problema principal es que solo
-las tarjetas gráficas de \emph{Nvidia} funcionan con \emph{CUDA} por lo que no se puede usar
-con otras tarjetas. \cite{noauthor_cuda_2017}
+\paragraph{CUDA} es la solución de \emph{GPGPU} ofrecida por \emph{Nvidia}.
+Es un estándar propietario y cerrado controlado por \emph{Nvidia} y que solo se
+puede usar con sus tarjetas gráficas. \cite{noauthor_cuda_2017}
 
-\paragraph{OpenCL} \cite{noauthor_opencl_2013}
+La gran ventaja de \emph{CUDA} es el soporte que ofrece \emph{Nvidia} para
+integrar aplicaciones con \emph{CUDA}. Se ha convertido en el método de
+\emph{GPGPU} más popular actualmente en el ámbito del cálculo científico.
+Es más fácil programar en \emph{CUDA}: en un estudio sobre implementaciones
+de frameworks en \emph{CUDA} frente \emph{OpenCL} se encontró que \emph{OpenCL}
+requiere el doble de lineas de código (en la
+framework de Rodinia
+\cite{memeti_benchmarking_2017,university_of_virginia_rodinia_nodate} )
 
-\paragraph{OpenACC} \cite{noauthor_about_nodate}
+En la mayoría de casos \emph{CUDA} ofrece mejores resultados que \emph{OpenCL} o
+\emph{OpenACC} ya que la implementación de \emph{Nvidia} de \emph{CUDA} en sus
+tarjetas esta mejor optimizada que \emph{OpenCL}.
+
+\paragraph{OpenCL} es un estándar de código abierto al que se acogen la mayoría
+de tarjetas gráficas actuales (Incluidas las de \emph{Nvidia}).
+\cite{noauthor_opencl_2013}
+
+En términos de funcionalidad y rendimiento es equiparable a \emph{CUDA}. La
+ventaja de \emph{OpenCL} es que es compatible con la mayoría de tarjetas
+gráficas. Es posible que si se tiene una tarjeta gráfica de \emph{Nvidia}
+se obtuviera mejor rendimiento con \emph{CUDA}, pero la diferencia
+probablemente es negligible (aunque depende del caso en concreto).
+
+La otra desventaja ya se ha comentado antes, \emph{OpenCL} suele ser más
+complejo para el programador que \emph{CUDA}.
+
+
+\paragraph{OpenACC} es otro estándar de código abierto. A diferencia de
+\emph{OpenCL}, \emph{OpenACC} usa directivas de compilador (\texttt{\#pragma})
+similares a las de \emph{OpenMP} (para multithreading en \emph{CPU}). Estas
+directivas tienen la ventaja que no afectan al código original y es más fácil
+diferenciar el código original del \emph{GPGPU}.
+\cite{noauthor_about_nodate}
+
+\emph{OpenACC} es un lenguaje con un nivel abstracción más alto que \emph{CUDA}
+y \emph{OpenCL}. Esto ofrece la ventaja de que el código es mucho mas portable
+entre distintas arquitecturas pero restringe el nivel en que se puede optimizar
+el código. Muchas optimizaciones a nivel del hardware especifico no se pueden
+realizar con \emph{OpenACC} o es muy complicado.
+
+\pagebreak
+\subsection*{Interoperación}
+
+\emph{OpenACC} es capaz de interoperar con \emph{CUDA}
+sin necesidad de hacer muchos cambios en el código \cite{noauthor_3_2014}.
+
+En el caso de \emph{OpenCL} no existe interoperabilidad con \emph{CUDA} ni con
+\emph{OpenACC} de manera nativa. Es posible que se puedan usar los mismos
+punteros de memoria para compartir datos entre \emph{OpenCL} y \emph{CUDA} o
+\emph{OpenACC} pero no está garantizado.
+Una posible opción usar un buffer de \emph{OpenGL} para guardar transferir la
+información de uno a otro: si se \emph{bindean} los objetos en el mismo bufer de
+\emph{OpenGL} ocuparan la misma posición de memoria en la \emph{GPU} y se podrán
+usar en los dos.
+
+La ventaja de la interoperabilidad entre los estándares es la posibilidad de usar
+librerías escritas en otro estándar en el desarrollo de una aplicación. No es
+necesario implementar funcionalidad que ya esta correctamente implementada y
+testeada en una librería popular con otro lenguaje. Esto permite también que los
+programadores se puedan especializar en un estándar en concreto y no tengan que
+aprender distintos estándares para desarrollar programas en \emph{GPGPU}.
+
+En el caso de \emph{OpenACC} la propia guia de programación nos habla de los
+beneficios y desventajas de usar \emph{OpenACC} sugiriendo usar \emph{OpenACC}
+en combinación con \emph{CUDA} o \emph{OpenCL}. Según la guía se recomienda usar
+\emph{OpenACC} en la mayoría del código ya que su abstracción facilita la
+programación y en partes criticas del programa recurrir a \emph{CUDA} o
+\emph{OpenCL} si estos permiten mejores optimizaciones
+\cite{noauthor_openacc_nodate}. Este enfoque es similar al que se usa en algunas
+librerías de \emph{Python} donde gran parte del código esta escrito en \emph{Python}
+pero las partes mas costosas se implementan directamente en \emph{C}.
 
 \end{pregunta}
 \begin{pregunta}{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
