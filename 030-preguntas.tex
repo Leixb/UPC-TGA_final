@@ -152,6 +152,7 @@ por bloque y que las variables N y M pueden tener cualquier valor (p.e. N =
 1237, M = 2311, suponed que N, M > 1024).
 
 \vspace{1em} \sep{}
+\vspace{3em}
 
 Si analizamos las dependencias del código, vemos que \texttt{mA[i][j]} depende
 del valor \texttt{mA[i][0]}, por lo que se tiene que calcular siempre la columna
@@ -217,6 +218,8 @@ de la fila en la que se ha calculado. Al igual que en el caso de las columnas us
     \label{lst:kernel-elemento}
 \end{listing}
 
+\nocite{noauthor_cuda_nodate}
+
 \end{pregunta}
 
 \begin{pregunta}{Disponemos de una tarjeta gráfica con 2 GPUs. En esta tarjeta queremos
@@ -227,9 +230,125 @@ de la fila en la que se ha calculado. Al igual que en el caso de las columnas us
     ¿Cómo pueden hacerlo? Os ayudará tener en mente cómo funciona el pipeline
 gráfico} \sep{}
 
+Hay varias opciones de como dividir el trabajo entre las \emph{GPU}s. Si
+consideramos el pipeline gráfico podemos partir el trabajo dividiendo el área a
+renderizar en dos secciones, una para cada tarjeta (\emph{Split Frame
+Rendering}). Alternativamente podemos hacer que las tarjetas renderizen
+\emph{frames} alternados (\emph{Alternate Frame Rendering}) o combinar los
+graficos de las dos tarjetas para hacer Antialiasing.
+
+En todos los casos solo una \emph{GPU} mostrara la imagen en pantalla por lo que
+toda la información generada por la otra \emph{GPU} se tiene que transferir a la
+tarjeta principal a la que esta conectada el monitor. Esto se podría evitar
+teóricamente si se usaran dos pantallas conectadas a gráficas distintas pero no
+es habitual. \cite{noauthor_sli_2011}
+
+\subsection*{SFR}
+
+En el caso de \emph{SFR} (\emph{Split Frame Rendering}) al separar la imagen
+final en dos partes se puede reducir el uso de memoria de las tarjetas.
+
+Para poder separar la imagen en dos partes debemos aplicar el proceso de
+\emph{CULLING} usando una parte del área de renderizado en una tarjeta y la otra
+mitad en la otra. Para ello la  mejor opción es enviar todos los pixels a las
+tarjetas y que hagan \emph{CULLING} con distintos parámetros. Por lo que se
+tiene que enviar toda la información de vértices de la escena a las dos gráficas
+simultáneamente.
+
+La ventaja de este método es que el uso de recursos de las tarjetas individuales
+es menor ya que solo deben almacenar la mitad de información de primitivas, fragmentos y
+pixels. Este menor uso de memoria puede permitir renderizar a resoluciones
+mayores que no se podrían conseguir con solo una de las gráficas por problemas
+de memoria.
+
+La desventaja es que la sincronización ha de ser
+perfecta entre las dos \emph{GPU}s y deben funcionar de la misma manera para
+garantizar que no se vean cambios aparentes entre las dos partes de la imagen
+final. También Pueden surgir problemas de aliasing en la zona en la que se unen
+las imágenes.
+
+\subsection*{AFR}
+
+Con \emph{AFR} (\emph{Alternate Frame Rendering}) las dos tarjetas tienen que
+tener toda la información de la escena, ya que tienen que computar la escena
+entera las dos. Esto implica que se debe enviar toda la información a las dos
+tarjetas al igual que en el caso de \emph{SFR}. Sin embargo, las dos tarjetas
+deben calcular toda la escena por lo que el uso de memoria en las tarjetas es
+el mismo que si se usaran individualmente.
+
+\subsection*{Anti-aliasing}
+
+Esta técnica consiste en calcular varios puntos usados en el proceso de
+\emph{anti-aliasing} en las dos \emph{GPU}s usando distintos puntos
+de sampling en las dos \emph{GPU}s. Esto permite usar el doble (o mas) de puntos
+para calcular el \emph{anti-aliasing} ofreciendo mejor calidad de imagen.
+
+Para aplicar \emph{anti-aliasing} se necesita información de fragmentos y de las
+texturas. La memoria de texturas se puede copiar des del \emph{host} pero los
+datos de los fragmentos tienen que haber sido calculados por la tarjeta gráfica.
+Para ello se deben computar los fragmentos, transferir-los a la segunda tarjeta,
+hacer el \emph{sampling} y devolver la información de las \emph{samples} a la
+tarjeta principal donde se combinan y se produce la imagen final. Por lo tanto
+hay que poder comunicar las tarjetas para poder enviar los fragmentos y recibir
+los \emph{samples}.
+
+\subsection*{Tareas no gráficas}
+
+Para todos los métodos descritos antes se tiene que poder copiar toda la
+información de la segunda tarjeta a la principal para poder mostrar la imagen
+final en pantalla (o realizar el \emph{anti-aliasing}). En la práctica, para
+resoluciones actuales usar los buses de \emph{PCI} puede saturar el ancho de
+banda ya que no solo se tiene que comunicar una tarjeta con la otra sino que
+también se deben copiar los datos de la aplicación.
+
+Para poder realizar estos métodos de forma eficiente se debe usar
+una conexión directa entre las tarjetas que permita un gran ancho de banda capaz
+de transmitir los \emph{frames} entre tarjetas rápidamente. Las tarjetas
+gráficas de \emph{Nvidia} ofrecen esta funcionalidad a través de una conexión
+llamada \emph{SLI} que conecta directamente las tarjetas con un cable
+\cite{noauthor_sli_nodate}. La misma
+tecnología existe en el caso de las tarjetas \emph{AMD} a la que llaman
+\emph{Crossfire} \cite{noauthor_amd_nodate}. Actualmente las nuevas tarjetas de
+estas empresas ya no ofrecen esta funcionalidad.
+
+Si no se dispone de \emph{SLI} o \emph{Crossfire} se puede usar la segunda
+tarjeta para realizar tareas no relacionadas con la renderizaci\'on. Por ejemplo
+se podría usar para hacer cálculos del sistema de simulación física del juego.
+En el caso de \emph{Nvidia} el propio usuario puede configurar que el sistema
+\emph{PhysX} (simulación física de \emph{Nvidia}) use la \emph{GPU} secundaria.
+
+
+
 \end{pregunta}
 \begin{pregunta}{Una de las herramientas que utilizamos en CUDA son los eventos (event en
 CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.} \sep{}
+
+Los eventos en \emph{CUDA} sirven para marcar puntos en la ejecución de un \emph{stream}.
+\cite{noauthor_event_nodate}. Nos permiten obtener métricas sobre los instantes en los
+que se producen ciertas operaciones durante la ejecución del \emph{stream}
+
+Se pueden usar para sincronizar distintos \emph{streams} o para medir tiempos de ejecución
+de partes de un \emph{stream}.
+
+\subsection*{Funcionamiento}
+
+\subsection*{Ejemplos}
+
+\begin{listing}[H]
+    \caption{Medir el tiempo de ejecución de un kernel con \emph{events}}
+    \label{lst:kernel-event}
+    \begin{minted}{cuda}
+    event
+    \end{minted}
+\end{listing}
+
+\begin{listing}[H]
+    \caption{Sincronización de \emph{streams} con \emph{events}}
+    \label{lst:kernel-event-streams}
+    \begin{minted}{cuda}
+    event
+    \end{minted}
+\end{listing}
 
 \end{pregunta}
 \begin{pregunta}{Si queremos utilizar GPUs para cálculo de propósito general (GPGPU)
@@ -242,13 +361,18 @@ popular actualmente debido a la facilidad de programar usando \emph{CUDA}. Debid
 hay muchas aplicaciones de calculo científico que usan \emph{CUDA} exclusivamente y es más fácil
 encontrar información y recursos sobre su funcionalidad. El problema principal es que solo
 las tarjetas gráficas de \emph{Nvidia} funcionan con \emph{CUDA} por lo que no se puede usar
-con otras tarjetas.
+con otras tarjetas. \cite{noauthor_cuda_2017}
 
-\paragraph{OpenCL} ss
+\paragraph{OpenCL} \cite{noauthor_opencl_2013}
 
-\paragraph{OpenACC} es la otra
+\paragraph{OpenACC} \cite{noauthor_about_nodate}
 
 \end{pregunta}
 \begin{pregunta}{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué
 implicaciones tienen en el diseño de la GPU?} \sep{}
+
+Hay diversos filtros: lineal, bi-lineal, tri-lineal anisotropico
+
+\cite{heckbert_survey_1986}
+
 \end{pregunta}
