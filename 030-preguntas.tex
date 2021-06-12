@@ -34,7 +34,10 @@
 El pipeline gráfico tradicional tiene como objetivo la generación de gráficos
 explotando al máximo el paralelismo que ofrecen las GPUs. Para ello el pipeline
 organiza las distintas tareas a realizar de forma coherente aprovechando al
-máximo las capacidades de las GPUs y ocultando la latencia de memoria.
+máximo las capacidades de las GPUs y ocultando la latencia de memoria. Este
+pipeline es relativamente simple en comparación al actual y muy limitado en
+capacidad de programar su funcionamiento: solo hay dos \emph{shaders} que pueden
+hacer operaciones muy limitadas.
 
 El pipeline se puede dividir en 4 etapas principales. Aunque hay un orden en
 estas etapas, algunas operaciones se pueden realizar simultáneamente y así
@@ -107,9 +110,15 @@ de varios pixels. Las operaciones de aceptación/rechazo se realizan mediante
 
 Actualmente las etapas del pipeline gráfico tradicional se siguen aplicando en
 las GPUs pero han habido muchos cambios en su funcionamiento y arquitectura.
-Quizás el más notable son los \emph{shaders} unificados, que permiten que
-los \emph{vertex} y \emph{fragment shaders} usen los mismos elementos de
-cálculo.
+Quizás el más notable son los \emph{shaders}. En las tarjetas gráficas actuales
+los \emph{shaders} estan unificados, que permiten que los \emph{vertex} y
+\emph{fragment shaders} usen los mismos elementos de cálculo. También
+hay nuevos \emph{shaders} (\emph{Geometry}, \emph{Hull}, \emph{Domain})
+que las APIs gráficas pueden implementar ya que al estar unficados los \emph{shaders}
+se puede mezclar mejor los elementos programables y los fijos y añadir procesos
+programables en el pipeline sin necesidad de cambiar la arquitectura de la tarjeta.
+Además los \emph{shaders} tienen más capacidades permitiendo acceso a memoria
+convencional instrucciones de control de flujo y más registros.
 
 \paragraph{Referencias:}
 \cite{lawrence_3d_2012}
@@ -153,30 +162,60 @@ Otro apunte importante es que trabajar con matrices en CUDA es complejo y puede
 generar problemas (alocución no contigua en memoria de hileras), por lo que en
 mi versión se usaran matrices aplanadas.
 
+El código completo se encuentra en el~\cref{asec:codigo}.
+
+\pagebreak
 \subsection*{(a) Columna}
 
+Para el \emph{kernel} de columna tenemos que asegurar-nos de que la primera columna
+se ha calculado antes de proceder al resto. Para ello usamos un \emph{lock} que
+se tiene que inicializar a 0 antes de la llamada al \emph{kernel} y al que solo el
+primer thread del primer bloque escribe. Usamos un \texttt{while} para esperar a que
+el valor del \emph{lock} este en 1 sincronizando los threads.
+
+Otra alternativa sería ejecutar la primera columna en serie antes del \emph{kernel} y que el
+thread de la primera columna no hiciera nada.
+
 \begin{listing}[H]
-    \caption{kernel columna}
-    \inputminted[firstline=18,lastline=28]{cuda}{code/main.cu}
-    \label{lst:kernel-fila}
+    \caption{Kernel columna y su invocación}
+    \inputminted[firstline=17,lastline=33]{cuda}{code/main.cu}
+    \vspace{-2em}
+    \inputminted[firstline=120,lastline=127,autogobble]{cuda}{code/main.cu}
+    \label{lst:kernel-columna}
 \end{listing}
 
+\pagebreak
 \subsection*{(b) Fila}
 
+Para el \emph{kernel} de fila si empezamos cada fila por la columna 0 no hay ningún
+problema de dependencias entre threads.
+
 \begin{listing}[H]
-    \caption{kernel fila}
-    \inputminted[firstline=30,lastline=38]{cuda}{code/main.cu}
+    \caption{Kernel fila y su invocación}
+    \inputminted[firstline=35,lastline=41]{cuda}{code/main.cu}
+    \vspace{-2em}
+    \inputminted[firstline=114,lastline=117,autogobble]{cuda}{code/main.cu}
     \label{lst:kernel-fila}
 \end{listing}
 
+\pagebreak
 \subsection*{(c) Elemento}
 
+Al igual que en el caso de las columnas, para calcular un elemento es necesario que
+el valor de la primera columna de la fila en el que se encuentra el elemento se haya
+calculado antes. Pero a diferencia del caso de las columnas, podemos calcular todos los
+elementos de la primera columna en paralelo. Para ello usaremos un \emph{lock} de
+\emph{N} posiciones en el que el primer bloque del primer thread escribirá en la posición
+de la fila en la que se ha calculado. Al igual que en el caso de las columnas usamos un
+\texttt{while} con el \emph{lock} para esperar a que se completen estos elementos.
+
 \begin{listing}[H]
-    \caption{kernel elemento}
-    \inputminted[firstline=45,lastline=54]{cuda}{code/main.cu}
+    \caption{Kernel elemento y su invocación}
+    \inputminted[firstline=43,lastline=57]{cuda}{code/main.cu}
+    \vspace{-2em}
+    \inputminted[firstline=130,lastline=137,autogobble]{cuda}{code/main.cu}
     \label{lst:kernel-elemento}
 \end{listing}
-
 
 \end{pregunta}
 
@@ -197,6 +236,17 @@ CUDA). ¿Para qué sirven? ¿Cómo se utilizan? Pon ejemplos de uso.} \sep{}
     puedes escoger entre CUDA, OpenCL y OpenACC. Describe las ventajas e
     inconvenientes de cada alternativa.  Además, se pueden combinar. ¿Qué
 posibilidades ofrece combinar OpenACC con CUDA o OpenCL?} \sep{}
+
+\paragraph{CUDA} es la solución de \emph{GPGPU} ofrecida por \emph{Nvidia}. Es la más
+popular actualmente debido a la facilidad de programar usando \emph{CUDA}. Debido a esto
+hay muchas aplicaciones de calculo científico que usan \emph{CUDA} exclusivamente y es más fácil
+encontrar información y recursos sobre su funcionalidad. El problema principal es que solo
+las tarjetas gráficas de \emph{Nvidia} funcionan con \emph{CUDA} por lo que no se puede usar
+con otras tarjetas.
+
+\paragraph{OpenCL} ss
+
+\paragraph{OpenACC} es la otra
 
 \end{pregunta}
 \begin{pregunta}{Hablando de texturas, ¿qué filtros existen?, ¿puedes describirlos? ¿qué

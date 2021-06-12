@@ -27,12 +27,16 @@ primeras (a-e) requieren una explicación más elaborada.}
 
 \item \textbf{Siempre decimos que en una GPU ocultamos la latencia con memoria. ¿Puedes explicar cómo lo hacemos?}
 
-        Mediante paralelismo y cambios de contexto de ejecución. Mientras una
-        parte de la memoria se esta copiando (latencia) se cambia el contexto de
-        ejecución para realizar otras tareas. De modo similar se pueden a
-        empezar a ejecutar \emph{kernels} a medida que se transfieren los datos
-        de memoria necesarios. No hace falta esperar a terminar todas las copias
-        para empezar la ejecución. \cite{volkov_understanding_nodate}.
+        Mediante paralelismo, un gran ancho de banda y cambios de contexto de
+        ejecución. Al tener muchas rutinas ejecutándose en paralelo el coste de
+        la latencia queda oculto.  Adicionalmente con un buen \emph{scheduler}
+        se puede ir cambiando el contexto de ejecución evitando tener que
+        esperar a operaciones de memoria ejecutando otras instrucciones. También
+        se puede ocultar la latencia dividiendo las operaciones de memoria en
+        partes permitiendo así empezar a calcular una vez se ha copiado la
+        primera parte mientras se acaban de copiar el resto. Esto es posible
+        gracias al gran ancho de banda de las tarjetas actuales.
+        \cite{volkov_understanding_nodate}.
 
 \item \textbf{¿Qué significa que una GPU tenga los shaders unificados?}
 
