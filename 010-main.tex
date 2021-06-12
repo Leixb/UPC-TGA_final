@@ -93,7 +93,7 @@ Examen final}
     \defbibheading{bibgeneral}{%
         \section*{Referencias generales}}
     \defbibheading{subbibliography}{%
-        \section*{Referencias para pregunta \therefsection}}
+        \section*{Referencias para la pregunta \therefsection}}
 
     \printbibliography[heading=bibgeneral]
 
@@ -101,6 +101,7 @@ Examen final}
     \newcounter{int}
     \@whilenum\value{int}<8\do
     {\stepcounter{int}
+        \newrefcontext[labelprefix=\theint{}.]
         \printbibliography[section=\theint,heading=subbibliography]
     }
     \makeatother
