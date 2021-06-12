@@ -327,26 +327,107 @@ Los eventos en \emph{CUDA} sirven para marcar puntos en la ejecución de un \emp
 \cite{noauthor_event_nodate}. Nos permiten obtener métricas sobre los instantes en los
 que se producen ciertas operaciones durante la ejecución del \emph{stream}
 
-Se pueden usar para sincronizar distintos \emph{streams} o para medir tiempos de ejecución
-de partes de un \emph{stream}.
+Estos eventos de \emph{CUDA} se pueden usar para medir el tiempo de ejecución
+de tareas en un \emph{stream}, sincronizar tareas en un mismo \emph{stream} o
+entre distintos \emph{streams}.
 
 \subsection*{Funcionamiento}
 
+El funcionamiento de los eventos es muy simple y esta altamente relacionado con
+el funcionamiento de los \emph{streams}:
+
+\begin{itemize}
+    \item Creamos el evento con: \texttt{cudaEventCreate(event)}
+
+        En este punto solo hemos creado el evento y hemos almacenado su
+        referencia en la variable \texttt{event}.
+
+    \item Registramos el evento con: \texttt{cudaEventRecord(event, stream)}
+
+        Con esta funcion registramos el evento en el \emph{stream} especificado
+        por la variable \texttt{stream}. Cuando este \emph{stream} acabe de
+        ejecutar lo que tenia por delante en la cola almacenara el tiempo en el
+        que ha llegado al evento en nuestra variable evento (a nivel de
+        \emph{GPU}).
+
+    \item Sincronizamos el evento con: \texttt{cudaEventSynchronize(event)}
+
+        Antes de poder consultar el valor del evento tenemos que sincronizar con
+        la \emph{GPU} para asegurar que se ha llegado ya a dar un valor a este.
+
+    \item Calculamos el tiempo entre eventos con: \texttt{cudaEventElapsedTime(\&t, start, end)}
+
+        Esta función calcula el tiempo entre dos eventos y los almacena en la
+        variable \texttt{t} (de tipo \texttt{float}).
+
+    \item También podemos consultar si se ha llegado al evento con:
+        \texttt{cudaEventQuery(event)}
+
+    \item Eliminamos el evento con: \texttt{cudaEventDestroy(event)}
+
+    \item Para la sincronización entre \emph{streams} podemos usar:
+        \texttt{cudaStreamWaitEvent(stream, event, flags)}
+
+        Esta función registra en el \emph{stream} especificado un punto del que
+        no se puede pasar hasta que no termine el evento.
+\end{itemize}
+
 \subsection*{Ejemplos}
+
+En el~\cref{lst:kernel-event} podemos ver un ejemplo de como usar eventos para
+medir el tiempo de ejecución (en milisegundos). En este caso solo hace falta sincronizar el
+último evento ya que si se ha llegado a ese, el resto también.
 
 \begin{listing}[H]
     \caption{Medir el tiempo de ejecución de un kernel con \emph{events}}
     \label{lst:kernel-event}
-    \begin{minted}{cuda}
-    event
+    \begin{minted}[autogobble]{cuda}
+    cudaEvent_t start, end;
+    cudaEventCreate(&start); cudaEventCreate(&end);
+
+    cudaEventRecord(start, 0);
+    kernel<<<256,256>>>(...);
+    cudaEventRecord(end, 0);
+
+    float tiempoKernel;
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&tiempoKernel, start, end);
+
+    cudaEventDestroy(start); cudaEventDestroy(end);
+
+    printf("Tiempo de ejecución: %dms\n", tiempoKernel)
     \end{minted}
 \end{listing}
+
+En el~\cref{lst:kernel-event-streams} podemos ver un ejemplo del uso de eventos
+para la sincronización entre dos \emph{streams} distintos. En este caso el
+kernel $A$ se ejecuta en el \emph{stream} 1 y los kernels $B$ y $C$ en el
+\emph{stream} 2. El evento \texttt{lock} se registra en el \emph{stream} 1
+cuando el kernel $A$ ha terminado. En el \emph{stream} 2, se espera a que este
+evento se acabe antes de continuar y ejecutar el kernel $C$.
+
+De este modo los kernels $A$ y $B$ se pueden ejecutar concurrentemente y $C$
+solo se puede ejecutar cuando $A$ acabe (y $B$ también ya que están en el mismo
+\emph{stream}). Se podría conseguir el mismo resultado usando una llamada a
+\texttt{cudaDeviceSynchronize()} antes de llamar al kernel $C$.
 
 \begin{listing}[H]
     \caption{Sincronización de \emph{streams} con \emph{events}}
     \label{lst:kernel-event-streams}
-    \begin{minted}{cuda}
-    event
+    \begin{minted}[autogobble]{cuda}
+    cudaEvent_t lock;
+    cudaEventCreate(&lock);
+    cudaStream_t stream1, stream2;
+    cudaStreamCreate (&stream1); cudaStreamCreate (&stream2);
+
+    kernel_A<<<256, 256, stream1>>>(...);
+    cudaEventRecord(lock, stream1);
+
+    kernel_B<<<256, 256, stream2>>>(...);
+    cudaStreamWaitEvent(stream2, lock, 0);
+    kernel_C<<<256, 256, stream2>>>(...);
+
+    cudaEventDestroy(lock);
     \end{minted}
 \end{listing}
 
