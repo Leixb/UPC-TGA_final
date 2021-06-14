@@ -7,30 +7,109 @@ pregunta la encaréis cómo si fuera un pequeño trabajo.} \sep{}
 
 \subsection*{¿Qué es el raytracing?}
 
-El raytracing es una técnica de renderizaci\'on de gráficos basado en el trazado
-del camino que hacen los rayos de luz en la escena. A diferencia del sistema de
-rasterización estándar, el raytracing es un modelo de luz global, es decir tiene
-en consideración todas las fuentes de luz de la escena no solo la fuente
-principal. Como consiguiente es capaz de simular efectos ópticos como
-reflexión, refracción, dispersión y sombras entre otros.
+El raytracing es un técnica renderizaci\'on de gráficos basada en la proyección de
+rayos a través de la escena. En un sistema de renderizado se calcula como los objetos
+de la escena se proyectan en la imagen final, es decir para cada objeto se busca
+a que pixels de la imagen final afecta. En raytracing se hace lo contrario:
+para cada pixel de la imagen final, se proyecta un rayo partiendo de la cámara
+que \emph{busca} los objetos que intersecan. La ventaja de raytracing viene de
+la capacidad de calcular rayos recursivamente y ponderar-los para obtener un
+color final del pixel basado en la interacción con el resto de objetos de la
+escena. Como consiguiente con raytracing se obtienen imágenes mucho mas
+foto-realistas debido a que considera las sombras, reflejos, refracción,
+ínter-reflejos y otros efectos que no se pueden calcular con rasterizado.
+Un claro ejemplo son las sombras, con raytracing se pueden calcular de modo
+fiable y realista pero con rasterizado se tienen que calcular como una textura a
+parte y combinar-lo en la escena.
 
-La capacidad de la técnica de raytracing para calcular efectos ópticos de manera
-realista hace que se obtengan imágenes mucho más foto-realistas que mediante el
-rasterizado convencional (que para simular estos efectos ópticos tiene que
-recurrir a técnicas alternativas como texturas, \emph{stencils} \dots). Sin
-embargo el coste computacional del raytracing es mucho mayor y hasta hace poco
-no se podía aplicar en tiempo real y su uso estaba limitado al ámbito
-cinematográfico.
+El principal problema del raytracing es que requiere muchísima potencia
+computacional y por consiguiente no se puede usar para renderizado en tiempo
+real. Su uso hasta hace poco estaba limitado a simulaciones usadas para
+cinematografía en la que cada frame puede tardar varios minutos en calcular-se.
+
+% El raytracing es una técnica de renderizaci\'on de gráficos basado en el trazado
+% del camino que hacen los rayos de luz en la escena. A diferencia del sistema de
+% rasterización estándar, el raytracing es un modelo de luz global, es decir tiene
+% en consideración todas las fuentes de luz de la escena no solo las fuentes
+% principales. Esto incluye los efectos de difusión de color entre objetos.
+% Como consiguiente es capaz de simular efectos ópticos como
+% reflexión, refracción, dispersión y sombras entre otros.
+
+% La capacidad de la técnica de raytracing para calcular efectos ópticos de manera
+% realista hace que se obtengan imágenes mucho más foto-realistas que mediante el
+% rasterizado convencional (que para simular estos efectos ópticos tiene que
+% recurrir a técnicas alternativas como texturas, \emph{stencils} \dots). Sin
+% embargo el coste computacional del raytracing es mucho mayor y hasta hace poco
+% no se podía aplicar en tiempo real y su uso estaba limitado al ámbito
+% cinematográfico.
 
 
 \subsection*{Funcionamiento}
 
-Hay diversos algoritmos de \emph{raytracing} que varían en algunos puntos (Des
-de donde empezar los rayos, control de profundidad \dots) Pero todos se basan en
-el mismo concepto: trazar rayos de luz desde (o hasta) la cámara.
-% BVH
+En términos mas básicos, el raytracing es un algoritmo mas simple que el del
+renderizado ya que con el mismo método se puede calcular todo (no hacen falta
+varios procesos para calcular sombras, reflejos, \dots). \cite{leopold_english_2017}
 
-\cite{leopold_english_2017}
+\subsubsection*{Ray-casting}
+
+Para cada pixel de la imagen final, se traza un rayo partiendo de la posición de
+la cámara que pase por ese pixel. Se calcula con que objetos de la escena ínterseca
+este rayo. Una vez se obtenido el punto de intersección, se traza un rayo desde
+este nuevo punto hacia las fuentes de luz y se calcula si hay algún otro objeto
+ocluyendo la luz. Con la información de la luz y del materia podemos saber que
+color tendrá este punto. Este algoritmo de dos etapas es el método más básico de
+raytracing y produce resultados similares a un renderizado simple.
+
+\subsubsection*{Reflejos y refracciones}
+
+La parte interesante del raytracing es cuando se aplica recursividad al
+algoritmo anterior. Esta vez, para cada colisión no solo trazamos un rayo hacia
+la fuente de luz sino que también calculamos otro rayo reflectado y otro
+refractado (si el materia es refractante) y aplicamos otra vez el mismo
+algoritmo. Ahora tenemos una escena en el que a parte de sombras tenemos
+reflejos y refracciones.
+
+\subsubsection*{Refracción}
+
+Adicionalmente se puede calcular la difusión (como el propio material refleja
+luz en varias direcciones aunque sea mate), para ello en cada colisión
+calculamos varios rayos en diversas direcciones. Dependiendo del tipo de
+material estos rayos irán en todas direcciones o estarán predominantemente hacia
+una sola. Por ejemplo, un espejo perfecto solo lanzara un rayo en el angulo
+opuesto a la incidencia de la luz y un objeto completamente mate lanzará hacia
+todos los lados, en medio tendríamos todo un espectro de varios materiales
+lustrosos que lanzarán varios rayos en dirección similar a la del espejo mas o
+menos esparcidos dependiendo de su lustro.
+
+
+\subsection*{Detalles sobre el coste computacional}
+
+El problema con todas estas técnicas es que ya no hablamos de un solo rayo por
+pixel sino de un número bastante considerable. Para tener una buena imagen se
+deben usar alrededor de 5000 rayos para cada pixel (Esto sirve también como una
+técnica de anti-aliasing ya que los rayos se hacen empezar en varios puntos del
+pixel). Estos valores son los usados por estudios como \emph{Pixar} en el
+renderizado de sus películas y ofrecen una calidad de imagen excepcional.
+Desafortunadamente no se puede realizar a tiempo real. Este tipo de raytracing
+en el que se calculan tantos rayos se llama \emph{path-tracing}.
+
+\subsubsection*{Bounding Volume Hierarchy}
+
+El sistema de \emph{Bounding Volume Hierarchy} (\emph{BVH}) encapsula los
+objetos en \emph{Bounding boxes} en un árbol donde la caja raíz contiene toda
+la escena y las ramas contienen grupos de objetos hasta llegar a los objetos en
+si. Este árbol permite poder calcular la intersección de un rayo en una escena
+de $N$ objetos en $\mathcal{O}(\log{}n)$ ya que permite una búsqueda dicotómica
+en el espacio.
+
+\subsubsection*{Requisitos de memoria}
+
+Otro de los problemas que tiene el raytracing es que se accede a puntos de la
+memoria de modo no coherente. A diferencia del renderizado en el que un pixel
+solo accede a un punto o varios puntos de una misma textura, en raytracing los
+rayos pueden llevarnos a requerir acceder a información sobre cualquier objeto
+de la imagen por lo que es difícil tener un sistema que aproveche bien la cache.
+
 
 \subsection*{Nvidia RTX}
 
@@ -40,5 +119,97 @@ los nuevos \emph{RT cores} (\emph{RayTracing cores}). Estas unidades de
 procesamiento están especializadas en los procesos de cálculo necesarios para
 raytracing. Con estas nuevas tarjetas es posible generar gráficos con raytracing
 en tiempo real. \cite{noauthor_introducing_2018}
+
+En el apartado anterior he hablado de las complicaciones de aplicar raytracing
+en tiempo real debido al coste computacional. Sin embargo, las nuevas tarjetas
+\emph{RTX} de \emph{Nvidia} permiten raytracing en tiempo real. Para
+conseguir-lo \emph{Nvidia} implemento en sus tarjetas dos nuevos sistemas de
+computación especializados: los \emph{RT cores} y los \emph{Tensor cores}. Este
+hardware especializado permite reducir parte de los problemas inherentes del
+raytracing. En las siguientes secciones hablaré en concreto de que técnicas se
+aplican para conseguir poder usar raytracing en tiempo real.
+
+\subsubsection*{RT cores}
+
+Los \emph{Raytracing cores} se encargan de acelerar el proceso de proyectar de los
+rayos. Están especializados en dos operaciones: atravesar el \emph{BVH} y
+calcular la intersección de un rayo con un triángulo. Usando esta tecnología es
+posible calcular muy rápidamente las intersecciones de los rayos.
+
+\subsection*{Tensor cores}
+
+Los \emph{Tensor cores} vienen de la familia de tarjetas gráficas de
+\emph{Nvidia} especializadas en \emph{Machine Learning}. Estos cores están
+optimizados para cálculos usados en redes neuronales. A priori se podría pensar
+que no hay una relación entre estos y la renderización por raytracing, pero
+\emph{Nvidia} usa un sistema basado en redes neuronales para reducir el ruido de
+las imágenes generadas con raytracing.
+
+Cuando se genera una imagen usando raytracing, la calidad del resultado depende
+del numero de rayos usado para cada pixel. Si se usa un solo rayo por pixel, es
+posible que pixels contiguos el usando rayos de difusión aleatorio en las
+superficies hagan que queden de colores muy distintos, produciendo una imagen
+con ruido. Es por eso que en cinematografía se usan alrededor de 5000 rayos para
+cada pixel. Las nuevas tarjetas de \emph{Nvidia} son capaces de usar muy pocos
+rayos y aplicar un algoritmo de reducción de ruido asistido por redes neuronales
+para eliminar ese ruido y generar la imagen final.
+
+\subsection*{Usos de raytracing}
+
+En la mayoría de casos no se usa raytracing para renderizar toda la escena, sino
+que se usa una combinación de rasterización tradicional con raytracing en áreas
+de interés (materiales con propiedades reflectantes, refractantes \dots). Este
+sistema es distinto al sistema de \emph{path-tracing} que renderiza toda la
+escena usando rayos. Pero para videojuegos la diferencia entre usar \emph{RTX}
+en algunos juegos es notable.
+
+\paragraph{Iluminación global} la mayoría de juegos compatibles con \emph{RTX}
+usan el raytracing para el cálculo de la iluminación, solo con el uso de
+\emph{RTX} para la iluminación podemos obtener sombras suaves, reflejos de
+superficie y ínter-reflexiones (difusión de luz por parte de los objetos).
+Sin raytracing se tienen que calcular las sombras, refracciones y reflejos como
+escenas a parte y aplicar-las de modo similar a texturas.
+
+\paragraph{Oclusión de ambiente} (\emph{Ambient oclusion}) permite añadir
+volumen a los objetos aplicándoles sombras basadas en objetos cercanos
+(basándose solo en la iluminación de ambiente). Se consigue trazando rayos
+alrededor de cada punto de la escena y calculando cuantas colisiones reciben
+estos rayos en un radio determinado. Este efecto se puede aproximar
+sin raytracing usando el \emph{depth buffer} pero el resultado es muy distinto.
+
+\paragraph{Profundidad de campo} Con raytracing se puede aplicar un efecto de
+profundidad de campo mas realista que afecte incluso a las superficies
+refractadas y reflejadas.
+
+\paragraph{Distorsión de movimiento} Aplicando raytracing con muestras en
+posiciones ligeramente distintas del modelo en la escena se puede fácilmente
+conseguir un efecto de \emph{motion blur} sin necesidad de recurrir a otras
+técnicas.
+
+\paragraph{Efectos atmosféricos} Al tener información sobre el trazado de los
+rayos de luz en la escena se pueden añadir efectos atmosféricos como la
+dispersión de la luz.
+
+\paragraph{Cáustica} la cáustica es el efecto producido por la envolvente de los
+rayos de luz refractados o reflejados por una superficie curva cobre otra
+superficie. Por ejemplo cuando un rayo de sol atraviesa una copa de vino o los
+patrones que se generan por la refracción en las olas del mar sobre el fondo del
+mar. No existen métodos para aproximar cáusticas de modo general usando
+rasterizado, solo se pueden usar simulaciones aproximadas para causticas conocidas
+como las de las olas del mar.
+
+\subsection*{Conclusión}
+
+Los avances en el campo del raytracing en los últimos años han permitido llegar
+a tener raytracing en tiempo real en tarjetas para consumidores. La combinación
+del \emph{machine learning} como ayuda en procesos de renderizado es un campo
+prometedor que podría permitir mejorar drásticamente el modo en que se diseñan
+juegos. Un ejemplo es el estudio que vimos en clase, realizado por \emph{Intel
+labs} en el que se mejoraba la calidad de los graficos de \emph{GTA V} a través
+de \emph{ML} \cite{richter_enhancing_2021}.
+
+\nocite{haines_ray_2019,haines_ray_2020}
+
+
 
 \end{pregunta}
